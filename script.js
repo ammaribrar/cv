@@ -83,5 +83,116 @@ style.textContent = `
         opacity: 1;
         transform: translateY(0);
     }
+    .hide-item {
+        opacity: 0;
+        transform: translateY(40px) scale(0.95);
+        transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+    .reveal-item {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 `;
 document.head.appendChild(style);
+
+// Gallery Item Staggered Reveal
+const galleryObserverOptions = {
+    threshold: 0.1,
+    rootMargin: '0px 0px -50px 0px'
+};
+
+const galleryObserver = new IntersectionObserver((entries) => {
+    let delayCounter = 0;
+    entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+            setTimeout(() => {
+                entry.target.classList.add('reveal-item');
+            }, delayCounter * 150);
+            delayCounter++;
+            galleryObserver.unobserve(entry.target);
+        }
+    });
+}, galleryObserverOptions);
+
+document.querySelectorAll('.gallery-item').forEach(item => {
+    item.classList.add('hide-item');
+    galleryObserver.observe(item);
+});
+
+// Carousel Logic
+const carousels = document.querySelectorAll('.carousel-container');
+
+carousels.forEach(carousel => {
+    const track = carousel.querySelector('.carousel-track');
+    const slides = Array.from(carousel.querySelectorAll('.carousel-slide'));
+    const nextBtn = carousel.querySelector('.next-btn');
+    const prevBtn = carousel.querySelector('.prev-btn');
+    const indicatorsContainer = carousel.querySelector('.carousel-indicators');
+
+    if (track && slides.length > 0) {
+        let currentSlide = 0;
+        
+        // Create indicators
+        slides.forEach((_, index) => {
+            const dot = document.createElement('div');
+            dot.classList.add('indicator');
+            if (index === 0) dot.classList.add('active');
+            dot.addEventListener('click', () => {
+                currentSlide = index;
+                updateCarousel();
+            });
+            if(indicatorsContainer) indicatorsContainer.appendChild(dot);
+        });
+
+        const indicators = Array.from(carousel.querySelectorAll('.indicator'));
+
+        function updateCarousel() {
+            track.style.transform = `translateX(-${currentSlide * 100}%)`;
+            indicators.forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentSlide);
+            });
+        }
+
+        function nextSlide() {
+            currentSlide = (currentSlide + 1) % slides.length;
+            updateCarousel();
+        }
+
+        function prevSlide() {
+            currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+            updateCarousel();
+        }
+
+        if (nextBtn) nextBtn.addEventListener('click', nextSlide);
+        if (prevBtn) prevBtn.addEventListener('click', prevSlide);
+
+        // Auto-play
+        let carouselInterval = setInterval(nextSlide, 3000);
+
+        // Pause on hover
+        carousel.addEventListener('mouseenter', () => clearInterval(carouselInterval));
+        carousel.addEventListener('mouseleave', () => {
+            carouselInterval = setInterval(nextSlide, 3000);
+        });
+    }
+});
+
+// Scroll to Top Button Logic
+const scrollToTopBtn = document.getElementById('scrollToTopBtn');
+
+if (scrollToTopBtn) {
+    window.addEventListener('scroll', () => {
+        if (window.pageYOffset > 500) {
+            scrollToTopBtn.classList.add('show');
+        } else {
+            scrollToTopBtn.classList.remove('show');
+        }
+    });
+
+    scrollToTopBtn.addEventListener('click', () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+}
